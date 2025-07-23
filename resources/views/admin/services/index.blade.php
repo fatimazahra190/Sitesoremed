@@ -32,6 +32,19 @@
                 @can('edit services')
                 <a href="{{ route('admin.services.edit', $service) }}" class="btn btn-sm btn-success">Edit</a>
                 @endcan
+                @can('publish services')
+                @if(!$service->published)
+                <form action="{{ route('admin.services.publish', $service) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button class="btn btn-sm btn-primary">Publier</button>
+                </form>
+                @else
+                <form action="{{ route('admin.services.unpublish', $service) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button class="btn btn-sm btn-warning">Dépublier</button>
+                </form>
+                @endif
+                @endcan
                 @can('delete services')
                 <form action="{{ route('admin.services.destroy', $service) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this service?');">
                     @csrf @method('DELETE')

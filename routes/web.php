@@ -1,112 +1,124 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\AccountController;
-use App\Http\Controllers\NewsController;
-use App\Http\Controllers\ServiceController;
-use App\Http\Controllers\ContactController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\FrontendController;
+
+
 use Illuminate\Support\Facades\Route;
-use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\{
+    AdminController, GroupController, RoleController, ServiceController, NewsController,
+    ContactController, FrontendController, HomeController, AccountController, UserController
+};
 
+// Page d'accueil et frontend
 Route::get('/', [HomeController::class, 'index'])->name('home');
-
-Route::get('/news', [NewsController::class, 'index'])->name('news.index');
-Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
-
-Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
-Route::get('/services/{id}', [ServiceController::class, 'show'])->name('services.show');
-
-Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
-
 Route::get('/about', [FrontendController::class, 'about'])->name('about');
+Route::get('/contact', [FrontendController::class, 'contact'])->name('contact.index');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::get('/news', [FrontendController::class, 'news'])->name('news.index');
 Route::get('/products-services', [FrontendController::class, 'productsServices'])->name('products-services');
 Route::get('/service-areas', [FrontendController::class, 'serviceAreas'])->name('service-areas');
+Route::get('/services', [FrontendController::class, 'services'])->name('services.index');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Authentification
+Auth::routes();
 
-// Dashboard routes par rôle (corrigé)
-Route::get('/manager/dashboard', [\App\Http\Controllers\UserController::class, 'managerDashboard'])
-    ->middleware(['auth', 'role:manager'])
-    ->name('manager.dashboard');
-
-Route::get('/editor/dashboard', [\App\Http\Controllers\UserController::class, 'editorDashboard'])
-    ->middleware(['auth', 'role:editor'])
-    ->name('editor.dashboard');
-
-Route::get('/viewer/dashboard', [\App\Http\Controllers\UserController::class, 'viewerDashboard'])
-    ->middleware(['auth', 'role:viewer'])
-    ->name('viewer.dashboard');
-
-Route::get('/user/dashboard', [\App\Http\Controllers\UserController::class, 'userDashboard'])
-    ->middleware(['auth', 'role:user'])
-    ->name('user.dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/profile/export', [ProfileController::class, 'export'])->name('profile.export');
+// Utilisateur connecté
+Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+    Route::get('/', [UserController::class, 'index'])->name('index');
+    Route::get('/dashboard', [UserController::class, 'userDashboard'])->name('dashboard');
     Route::get('/account/delete', [AccountController::class, 'showDeleteForm'])->name('account.delete.form');
-    Route::delete('/account/delete', [AccountController::class, 'deleteAccount'])->name('account.delete');
+    Route::post('/account/delete', [AccountController::class, 'deleteAccount'])->name('account.delete');
 });
 
-// Admin (et super admin) dashboard route corrigée
-Route::get('/admin', [\App\Http\Controllers\AdminController::class, 'index'])
-    ->middleware(['auth', 'role:admin'])
-    ->name('admin.index');
+// Admin panel (RBAC + permissions)
+Route::middleware(['auth', 'permission:access admin panel'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('index');
 
-// Admin Routes
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\AdminController::class, 'index'])->name('index');
+    // Utilisateurs
+    Route::middleware('permission:view users')->group(function () {
+        Route::resource('users', AdminController::class)->except(['edit', 'update', 'destroy']);
+        Route::get('users/{user}/edit', [AdminController::class, 'editUser'])->name('users.edit')->middleware('permission:edit users');
+        Route::put('users/{user}', [AdminController::class, 'updateUser'])->name('users.update')->middleware('permission:edit users');
+        Route::delete('users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete')->middleware('permission:delete users');
+        Route::delete('users/{user}/permanent', [AdminController::class, 'permanentlyDeleteUser'])->name('users.permanent-delete')->middleware('permission:delete users');
+        Route::get('users/{user}/assign-roles', [AdminController::class, 'assignRolesForm'])->name('users.assign-roles-form')->middleware('permission:assign roles');
+        Route::post('users/{user}/assign-roles', [AdminController::class, 'assignUserRole'])->name('users.assign-roles')->middleware('permission:assign roles');
+        Route::post('users/{user}/suspend', [AdminController::class, 'suspendUser'])->name('users.suspend')->middleware('permission:suspend users');
+        Route::get('users/{user}/export', [AdminController::class, 'exportUserData'])->name('users.export')->middleware('permission:export data');
+        Route::get('users/export-all', [AdminController::class, 'exportUsers'])->name('users.export-all')->middleware('permission:export data');
+        Route::post('users/import', [AdminController::class, 'importUsers'])->name('users.import')->middleware('permission:import users');
+        Route::post('users/{user}/reset-password', [AdminController::class, 'resetUserPassword'])->name('users.reset-password')->middleware('permission:edit users');
+        Route::post('users/{user}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle-status')->middleware('permission:edit users');
+        Route::post('users/{user}/enable-mfa', [AdminController::class, 'enableMFA'])->name('users.enable-mfa')->middleware('permission:manage security');
+        Route::post('users/{user}/disable-mfa', [AdminController::class, 'disableMFA'])->name('users.disable-mfa')->middleware('permission:manage security');
+        Route::post('users/{user}/force-password-change', [AdminController::class, 'forcePasswordChange'])->name('users.force-password-change')->middleware('permission:manage security');
+    });
 
-    // Roles CRUD
-    Route::middleware('permission:view roles')->get('/roles', [\App\Http\Controllers\AdminController::class, 'rolesIndex'])->name('roles.index');
-    Route::middleware('permission:create roles')->get('/roles/create', [\App\Http\Controllers\AdminController::class, 'rolesCreate'])->name('roles.create');
-    Route::middleware('permission:create roles')->post('/roles', [\App\Http\Controllers\AdminController::class, 'rolesStore'])->name('roles.store');
-    Route::middleware('permission:edit roles')->get('/roles/{role}/edit', [\App\Http\Controllers\AdminController::class, 'rolesEdit'])->name('roles.edit');
-    Route::middleware('permission:edit roles')->put('/roles/{role}', [\App\Http\Controllers\AdminController::class, 'rolesUpdate'])->name('roles.update');
-    Route::middleware('permission:delete roles')->delete('/roles/{role}', [\App\Http\Controllers\AdminController::class, 'rolesDestroy'])->name('roles.destroy');
+    // Rôles
+    Route::middleware('permission:view roles')->group(function () {
+        Route::resource('roles', RoleController::class)->except(['edit', 'update', 'destroy']);
+        Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit')->middleware('permission:edit roles');
+        Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update')->middleware('permission:edit roles');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy')->middleware('permission:delete roles');
+    });
 
-    // Groups CRUD
-    Route::middleware('permission:view groups')->get('/groups', [\App\Http\Controllers\AdminController::class, 'groupsIndex'])->name('groups.index');
-    Route::middleware('permission:create groups')->get('/groups/create', [\App\Http\Controllers\AdminController::class, 'groupsCreate'])->name('groups.create');
-    Route::middleware('permission:create groups')->post('/groups', [\App\Http\Controllers\AdminController::class, 'groupsStore'])->name('groups.store');
-    Route::middleware('permission:edit groups')->get('/groups/{group}/edit', [\App\Http\Controllers\AdminController::class, 'groupsEdit'])->name('groups.edit');
-    Route::middleware('permission:edit groups')->put('/groups/{group}', [\App\Http\Controllers\AdminController::class, 'groupsUpdate'])->name('groups.update');
-    Route::middleware('permission:delete groups')->delete('/groups/{group}', [\App\Http\Controllers\AdminController::class, 'groupsDestroy'])->name('groups.destroy');
+    // Groupes
+    Route::middleware('permission:view groups')->group(function () {
+        Route::resource('groups', GroupController::class)->except(['edit', 'update', 'destroy']);
+        Route::get('groups/{group}/edit', [GroupController::class, 'edit'])->name('groups.edit')->middleware('permission:edit groups');
+        Route::put('groups/{group}', [GroupController::class, 'update'])->name('groups.update')->middleware('permission:edit groups');
+        Route::delete('groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy')->middleware('permission:delete groups');
+        Route::get('groups/{group}/assign-users', [GroupController::class, 'assignUsersForm'])->name('groups.assign-users-form')->middleware('permission:assign users to groups');
+        Route::post('groups/{group}/assign-users', [GroupController::class, 'assignUsers'])->name('groups.assign-users')->middleware('permission:assign users to groups');
+        Route::get('groups/{group}/assign-roles', [GroupController::class, 'assignRolesForm'])->name('groups.assign-roles-form')->middleware('permission:assign roles to groups');
+        Route::post('groups/{group}/assign-roles', [GroupController::class, 'assignRoles'])->name('groups.assign-roles')->middleware('permission:assign roles to groups');
+    });
 
-    // News CRUD
-    Route::middleware('permission:view news')->get('/news', [\App\Http\Controllers\AdminController::class, 'newsIndex'])->name('news.index');
-    Route::middleware('permission:create news')->get('/news/create', [\App\Http\Controllers\AdminController::class, 'newsCreate'])->name('news.create');
-    Route::middleware('permission:create news')->post('/news', [\App\Http\Controllers\AdminController::class, 'newsStore'])->name('news.store');
-    Route::middleware('permission:view news')->get('/news/{news}', [\App\Http\Controllers\AdminController::class, 'newsShow'])->name('news.show');
-    Route::middleware('permission:edit news')->get('/news/{news}/edit', [\App\Http\Controllers\AdminController::class, 'newsEdit'])->name('news.edit');
-    Route::middleware('permission:edit news')->put('/news/{news}', [\App\Http\Controllers\AdminController::class, 'newsUpdate'])->name('news.update');
-    Route::middleware('permission:delete news')->delete('/news/{news}', [\App\Http\Controllers\AdminController::class, 'newsDestroy'])->name('news.destroy');
+    // Services
+    Route::middleware('permission:view services')->group(function () {
+        Route::resource('services', ServiceController::class)->except(['edit', 'update', 'destroy']);
+        Route::get('services/{service}/edit', [ServiceController::class, 'edit'])->name('services.edit')->middleware('permission:edit services');
+        Route::put('services/{service}', [ServiceController::class, 'update'])->name('services.update')->middleware('permission:edit services');
+        Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy')->middleware('permission:delete services');
+    });
 
-    // Services CRUD
-    Route::middleware('permission:view services')->get('/services', [\App\Http\Controllers\AdminController::class, 'servicesIndex'])->name('services.index');
-    Route::middleware('permission:create services')->get('/services/create', [\App\Http\Controllers\AdminController::class, 'servicesCreate'])->name('services.create');
-    Route::middleware('permission:create services')->post('/services', [\App\Http\Controllers\AdminController::class, 'servicesStore'])->name('services.store');
-    Route::middleware('permission:view services')->get('/services/{service}', [\App\Http\Controllers\AdminController::class, 'servicesShow'])->name('services.show');
-    Route::middleware('permission:edit services')->get('/services/{service}/edit', [\App\Http\Controllers\AdminController::class, 'servicesEdit'])->name('services.edit');
-    Route::middleware('permission:edit services')->put('/services/{service}', [\App\Http\Controllers\AdminController::class, 'servicesUpdate'])->name('services.update');
-    Route::middleware('permission:delete services')->delete('/services/{service}', [\App\Http\Controllers\AdminController::class, 'servicesDestroy'])->name('services.destroy');
+    // News
+    Route::middleware('permission:view news')->group(function () {
+        Route::resource('news', NewsController::class)->except(['edit', 'update', 'destroy']);
+        Route::get('news/{news}/edit', [NewsController::class, 'edit'])->name('news.edit')->middleware('permission:edit news');
+        Route::put('news/{news}', [NewsController::class, 'update'])->name('news.update')->middleware('permission:edit news');
+        Route::delete('news/{news}', [NewsController::class, 'destroy'])->name('news.destroy')->middleware('permission:delete news');
+    });
 
-    // Contacts CRUD
-    Route::middleware('permission:view contacts')->get('/contacts', [\App\Http\Controllers\AdminController::class, 'contactsIndex'])->name('contacts.index');
-    Route::middleware('permission:view contacts')->get('/contacts/{contact}', [\App\Http\Controllers\AdminController::class, 'contactsShow'])->name('contacts.show');
-    Route::middleware('permission:delete contacts')->delete('/contacts/{contact}', [\App\Http\Controllers\AdminController::class, 'contactsDestroy'])->name('contacts.destroy');
+    // Contacts
+    Route::middleware('permission:view contacts')->group(function () {
+        Route::resource('contacts', ContactController::class)->except(['edit', 'update', 'destroy']);
+        Route::post('contacts/{contact}/reply', [ContactController::class, 'reply'])->name('contacts.reply')->middleware('permission:reply contacts');
+        Route::delete('contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy')->middleware('permission:delete contacts');
+    });
 
-    // Security & Logs
-    Route::middleware('permission:view security logs')->get('/security/logs', [\App\Http\Controllers\AdminController::class, 'securityLogs'])->name('security.logs');
-    Route::middleware('permission:view security dashboard')->get('/security/dashboard', [\App\Http\Controllers\AdminController::class, 'securityDashboard'])->name('security.dashboard');
-    Route::middleware('permission:view security checklist')->get('/security/checklist', [\App\Http\Controllers\AdminController::class, 'securityChecklist'])->name('security.checklist');
+    // Sécurité
+    Route::middleware('permission:view security dashboard')->get('security-dashboard', [AdminController::class, 'securityDashboard'])->name('security-dashboard');
+    Route::middleware('permission:manage sessions')->group(function () {
+        Route::get('session-management', [AdminController::class, 'sessionManagement'])->name('session-management');
+        Route::post('session-management/terminate', [AdminController::class, 'terminateSession'])->name('session-management.terminate');
+    });
+    Route::middleware('permission:manage ip whitelist')->group(function () {
+        Route::get('ip-whitelist', [AdminController::class, 'ipWhitelist'])->name('ip-whitelist');
+        Route::post('ip-whitelist', [AdminController::class, 'addIPToWhitelist'])->name('ip-whitelist.add');
+        Route::delete('ip-whitelist/{ip}', [AdminController::class, 'removeIPFromWhitelist'])->name('ip-whitelist.remove');
+    });
+    Route::middleware('permission:view security logs')->get('security-logs', [AdminController::class, 'securityLogs'])->name('security-logs');
+    Route::middleware('permission:view security checklist')->get('security-checklist', [AdminController::class, 'securityChecklist'])->name('security-checklist');
+    Route::middleware('permission:send notifications')->post('security/notify', [AdminController::class, 'sendSecurityNotification'])->name('security.notify');
+    Route::get('role-matrix', [AdminController::class, 'roleMatrix'])->name('role-matrix');
+
+    // Logs avancés (super admin)
+    Route::middleware('permission:super admin')->group(function () {
+        Route::get('advanced-logs', [AdminController::class, 'advancedLogs'])->name('advanced-logs');
+        Route::get('logs/{log}', [AdminController::class, 'logDetails'])->name('log-details');
+        Route::get('suspicious-activity', [AdminController::class, 'suspiciousActivity'])->name('suspicious-activity');
+    });
 });
 
 require __DIR__.'/auth.php';

@@ -116,6 +116,9 @@
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')">Supprimer</button>
                         </form>
                         @endcan
+                        @can('export data')
+                        <a href="{{ route('admin.users.export', $user) }}" class="btn btn-sm btn-success" target="_blank">Exporter</a>
+                        @endcan
                     </td>
                 </tr>
             @empty

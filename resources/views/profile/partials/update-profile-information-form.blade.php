@@ -48,6 +48,15 @@
         </div>
 
         <div class="flex items-center gap-4">
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="consent" id="consent" value="1" {{ old('consent', $user->consent) ? 'checked' : '' }}>
+                <label class="form-check-label" for="consent">
+                    J'accepte le traitement de mes données personnelles (RGPD)
+                </label>
+                @if($user->consent_accepted_at)
+                    <div class="text-xs text-gray-500 mt-1">Accepté le : {{ $user->consent_accepted_at }}</div>
+                @endif
+            </div>
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 
             @if (session('status') === 'profile-updated')

@@ -30,6 +30,19 @@
                 @can('edit news')
                 <a href="{{ route('admin.news.edit', $item) }}" class="btn btn-sm btn-success">Edit</a>
                 @endcan
+                @can('publish news')
+                @if(!$item->published)
+                <form action="{{ route('admin.news.publish', $item) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button class="btn btn-sm btn-primary">Publier</button>
+                </form>
+                @else
+                <form action="{{ route('admin.news.unpublish', $item) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button class="btn btn-sm btn-warning">Dépublier</button>
+                </form>
+                @endif
+                @endcan
                 @can('delete news')
                 <form action="{{ route('admin.news.destroy', $item) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this news?');">
                     @csrf @method('DELETE')
