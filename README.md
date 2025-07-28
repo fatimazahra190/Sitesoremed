@@ -1,61 +1,131 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📄 Documentation Technique – Système Sécurisé de Gestion des Utilisateurs (Laravel IAM)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 🔰 Introduction
 
-## About Laravel
+Ce projet a pour objectif de développer une application web sécurisée de gestion des utilisateurs, basée sur le framework Laravel. Il met en œuvre un système de gestion des identités et des accès (IAM) conforme aux standards de sécurité actuels, notamment le RGPD, et assure la protection des données via HTTPS/TLS.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## ⚙️ Installation et Mise en Œuvre Locale
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Prérequis
+- PHP version 8.1 ou supérieure
+- Composer
+- MySQL ou SQLite
+- Serveur local : Laragon ou Laravel Valet
+- OpenSSL (optionnel mais recommandé pour HTTPS local)
 
-## Learning Laravel
+### Procédure d’installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+1. **Cloner le dépôt GitHub** :
+   ```bash
+   git clone https://github.com/ton_nom_utilisateur/nom_du_repo.git
+   cd nom_du_repo
+   ```
+2.Installer les dépendances :
+   ```bash
+     composer install
+   ```
+3.Configurer l’environnement :
+   ```bash
+    cp .env.example .env
+    php artisan key:generate
+   ```
+4.Configurer la base de données dans .env :
+  ```bash
+    DB_CONNECTION=mysql
+    DB_HOST=127.0.0.1
+    DB_PORT=3306
+    DB_DATABASE=sitesoremed
+    DB_USERNAME=root
+    DB_PASSWORD=
+  ```  
+5.Exécuter les migrations et seeders :
+  ```bash
+    php artisan migrate --seed
+   ```
+6.Lancer le serveur Laravel :
+   ```bash
+    php artisan serve
+   ```
+7.Accéder à l’application :
+   - En HTTP : http://127.0.0.1:8000
+   - En HTTPS (si configuré) : https://sitesoremed.test
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 🚀 Fonctionnalités Clés
+### Gestion des utilisateurs:
+L’application permet aux utilisateurs de s'inscrire, de se connecter et de gérer leur profil de manière sécurisée. Une fonctionnalité de suppression de compte est disponible afin de respecter le droit à l’oubli prévu par le RGPD. 
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+   - Inscription / Connexion sécurisées (bcrypt)
+   - Tableau de bord personnel
+   - Suppression de compte (droit à l’oubli, RGPD)
 
-## Laravel Sponsors
+### Gestion des rôles et permissions (RBAC) 
+Les utilisateurs sont classifiés par rôles (ex. : administrateur, manager,editor,viewer,user), chaque rôle disposant de permissions définies. Le contrôle d'accès est appliqué via des middlewares Laravel. 
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Interface administrateur 
+L’administrateur a accès à un tableau de bord qui lui permet de : 
 
-### Premium Partners
+   - Interface d'administration avec visualisation de tous les utilisateurs. 
+   - Attribuer ou retirer des rôles et des groupes. 
+   - Accéder à un journal de sécurité listant les activités sensibles (tentatives de connexion échouées, suppression de comptes, activités critiques, etc.). 
+   - Visualiser des statistiques sur les connexions et les événements sécuritaires. 
+    -Visualiser et répondre aux messages/contact reçues 
+    -Ajouter ou retirer des services, actualités ,etc.  
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### RGPD – Conformité
+Le système inclut un formulaire de consentement explicite lors de l’inscription. Les utilisateurs peuvent demander la suppression de leurs données personnelles, et les informations sensibles sont chiffrées pour assurer leur confidentialité. 
 
-## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+   - Consentement explicite à l'inscription .  
+   - Droit à l'oubli : suppression complète et sécurisée des données .  
+   - Chiffrement des données sensibles avec Laravel Encryption.  
 
-## Code of Conduct
+## 🔐 Mesures de Sécurité
+### Authentification sécurisée
+Les mots de passe sont hachés avec l'algorithme bcrypt. Les accès aux différentes parties de l’application sont contrôlés par des middlewares basés sur les rôles. 
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Prévention des attaques
+L’application intègre des dispositifs contre : 
 
-## Security Vulnerabilities
+   - Les attaques par force brute : limitation du nombre de tentatives de connexion avec Laravel Throttle.    
+   - Les injections SQL : usage exclusif des requêtes préparées ou ORM Eloquent.   
+   - Les attaques XSS : validation stricte et échappement des entrées utilisateurs. 
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Journalisation
+Enregistrement des événements critiques dans une table dédiée (security_logs)
 
-## License
+### Chiffrement des données
+Les données sensibles (ex. : mot de passe ) sont chiffrées à l'aide du module Laravel Encryption. Les accès à ces données sont contrôlés par des mutateurs Eloquent. 
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### HTTPS/TLS
+Un certificat TLS auto-signé est utilisé pour les tests en local. L’application force l’utilisation du protocole HTTPS, avec en-têtes de sécurité tels que Content-Security-Policy, X-Frame-Options, et cookies sécurisés. 
+
+## 🧪 Accès de Démonstration
+Pour les tests, deux comptes sont fournis : 
+
+   - Administrateur : admin@test.com / password .  
+   - Utilisateur standard : user@test.com / password .  
+
+## 📂 Structure du projet 
+Les fichiers principaux sont organisés comme suit :  
+
+   - Contrôleurs : app/Http/Controllers/  .
+   - Vues : resources/views/ .  
+   - Migrations : database/migrations/ . 
+   - Routes : routes/web.php .  
+   - Modèle personnalisé des rôles : app/Models/Role.php  .  
+   - Seeder permissions : database/seeders/RoleAndPermissionSeeder.php
+
+## 📚 Ressources utiles: 
+   - Configuration HTTPS local : docs/https-setup.md .  
+   - Laravel Sécurité : https://laravel.com/docs/10.x/security.  
+   - Guide RGPD : https://gdpr.eu/developers/
+
+## 📜 Licence
+Ce projet est distribué sous licence MIT. Voir le fichier LICENSE pour plus de détails https://opensource.org/license/MIT.
+
+## 👤 Contact
+Auteur : Lafssal Fatima-Zahra    
+GitHub : https://github.com/fatimazahar190     
+Email : fatimazahralafssal@gmail.com
